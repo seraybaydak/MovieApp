@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MovieApp.Web.Data;
 using MovieApp.Web.Models;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MovieApp.Web.Controllers
 {
@@ -10,19 +12,60 @@ namespace MovieApp.Web.Controllers
         {
             return View();
         }
-        public IActionResult List()
+        public IActionResult List(int? id, string q)
         {
-            var filmListesi = new List<Movie> ()
+            //var controller = RouteData.Values["controller"];
+            //var action = RouteData.Values["action"];
+            //var genreid = RouteData.Values["id"];
+            //var kelime = HttpContext.Request.Query["q"].ToString();
+
+            var movies = MovieRepository.Movies;
+
+            if (id != null)
             {
-                new Movie { Title = "film 1", Description="açıklama 1", Director= "Yönetmen 1", Players=new string[] {"oyuncu 1", "oyuncu 2"}, ImageUrl="1.jpeg" },
-                new Movie { Title = "film 2", Description="açıklama 2", Director= "Yönetmen 2", Players=new string[] {"oyuncu 1", "oyuncu 2"}, ImageUrl="1.jpeg"},
-                new Movie { Title = "film 3", Description="açıklama 3", Director= "Yönetmen 3", Players=new string[] {"oyuncu 1", "oyuncu 2"}, ImageUrl = "1.jpeg"}
+                movies = movies.Where(m => m.GenreId == id).ToList();  
+            }
+
+            if (!string.IsNullOrEmpty(q)) 
+            {
+                movies = movies.Where(i => 
+                i.Title.ToLower().Contains(q.ToLower()) || 
+                 i.Description.ToLower().Contains(q.ToLower())).ToList();
+            }
+
+            var model= new MoviesViewModel()
+            {
+               Movies = movies
             };
-            return View("Movies", filmListesi);
+
+            return View("Movies", model);
         }
-        public string Details()
+        
+        public IActionResult Details(int id)
         {
-            return "Film Detayı";
+            return View(MovieRepository.GetById(id));
+        }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Create(Movie m)
+        {
+
+            //var m = new Movie()
+            //{
+            //    Title = Title,
+            //    Description = Description,
+            //    Director = Director,
+            //    ImageUrl = ImageUrl,
+            //    GenreId = GenreId
+            //};
+
+            MovieRepository.Add(m);
+
+            return RedirectToAction("List");
         }
     }
 }
